@@ -1,0 +1,41 @@
+{
+    "name": "ellipse/fastroute-named",
+    "type": "library",
+    "description": "FastRoute collector decorator implementing named routes",
+    "keywords": [
+        "router",
+        "FastRoute"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/ellipsephp/fastroute-named",
+    "support": {
+        "issues": "https://github.com/ellipsephp/fastroute-named/issues",
+        "source": "https://github.com/ellipsephp/fastroute-named"
+    },
+    "authors": [
+        {
+            "name": "pmall",
+            "email": "pierre.mallinjoud@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=7.1",
+        "nikic/fast-route": "^1.2"
+    },
+    "require-dev": {
+        "kahlan/kahlan": "^4.0",
+        "eloquent/phony-kahlan": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ellipse\\FastRoute\\": "src"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    }
+}
