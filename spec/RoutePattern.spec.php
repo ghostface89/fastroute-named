@@ -11,9 +11,9 @@ describe('RoutePattern', function () {
 
     beforeEach(function () {
 
-        $parser = new RouteParser\Std;
+        $this->parser = new RouteParser\Std;
 
-        $signatures = $parser->parse('/pattern/{p1}[/{p2}]');
+        $signatures = $this->parser->parse('/pattern/{p1}[/{p2}]');
 
         $this->pattern = new RoutePattern('name', $signatures);
 
@@ -85,15 +85,19 @@ describe('RoutePattern', function () {
 
         });
 
-        context('when no query string and no fragment is given', function () {
+        context('when no parameters, query string or fragment is given', function () {
 
-            it('should return only the url', function () {
+            it('should return an url with empty parameters, query string and fragment', function () {
 
-                $url = $this->pattern->url([1]);
+                $signatures = $this->parser->parse('/pattern');
+
+                $pattern = new RoutePattern('name', $signatures);
+
+                $url = $pattern->url();
 
                 $test = (string) $url;
 
-                expect($test)->toEqual('/pattern/1');
+                expect($test)->toEqual('/pattern');
 
             });
 

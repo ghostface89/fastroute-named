@@ -46,11 +46,11 @@ describe('Url', function () {
 
                 it('should append the fragment to the delegate url', function () {
 
-                    $url = new Url($this->path->get(), ['q1' => 'v1', 'q2' => 'v2']);
+                    $url = new Url($this->path->get(), [], 'fragment');
 
                     $test = (string) $url;
 
-                    expect($test)->toEqual('url?q1=v1&q2=v2');
+                    expect($test)->toEqual('url#fragment');
 
                 });
 
@@ -62,6 +62,20 @@ describe('Url', function () {
 
             context('when no fragment is given', function () {
 
+                it('should append the query string to the delegate url', function () {
+
+                    $url = new Url($this->path->get(), ['q1' => 'v1', 'q2' => 'v2']);
+
+                    $test = (string) $url;
+
+                    expect($test)->toEqual('url?q1=v1&q2=v2');
+
+                });
+
+            });
+
+            context('when a fragment is given', function () {
+
                 it('should append the fragment after the query string to the delegate url', function () {
 
                     $url = new Url($this->path->get(), ['q1' => 'v1', 'q2' => 'v2'], 'fragment');
@@ -71,10 +85,6 @@ describe('Url', function () {
                     expect($test)->toEqual('url?q1=v1&q2=v2#fragment');
 
                 });
-
-            });
-
-            context('when a fragment is given', function () {
 
             });
 
