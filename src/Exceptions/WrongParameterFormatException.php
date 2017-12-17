@@ -6,10 +6,12 @@ use RuntimeException;
 
 class WrongParameterFormatException extends RuntimeException implements FastRouteExceptionInterface
 {
-    public function __construct(string $format, string $value)
+    public function __construct(string $value, string $name, string $part, string $format)
     {
-        $msg = "The given value '%s' does not match the route parameter format '%s'";
+        $template = "The value '%s' does not match the format of the route '%s' '%s' parameter ('%s')";
 
-        parent::__construct(sprintf($msg, $value, $format));
+        $msg = sprintf($template, $value, $name, $part, $format);
+
+        parent::__construct($msg);
     }
 }

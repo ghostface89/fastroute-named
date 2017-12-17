@@ -2,41 +2,43 @@
 
 namespace Ellipse\FastRoute;
 
+use Ellipse\FastRoute\Exceptions\WrongParameterFormatException;
+
 class Path
 {
+    /**
+     * The route name.
+     *
+     * @var string
+     */
+    private $name;
+
+    /**
+     * The parts composing the pattern signature.
+     *
+     * @var array
+     */
     private $parts;
 
+    /**
+     * The parameters replacing the variable parts.
+     *
+     * @var array
+     */
     private $parameters;
 
-    private $basepath;
-
-    public function __construct(array $parts, arrar $parameters, string $basepath = '')
+    /**
+     * Set up a path with the given route name, parts and parameters.
+     *
+     * @param string    $name
+     * @param array     $parts
+     * @param array     $parameters
+     */
+    public function __construct(string $name, array $parts, array $parameters)
     {
+        $this->name = $name;
         $this->parts = $parts;
         $this->parameters = $parameters;
-        $this->basepath = $basepath;
-    }
-
-    public function value(): string
-    {
-        if (count($this->parts) > 0) {
-
-            [$part, $parts] = $this->split($this->parts);
-            [$parameter, $parameters] = $this->split($this->parameters);
-
-            $format = $parts[1];
-
-            if (preg_match('~^' . $format . '$~', $parameter) !== 0) {
-
-                return (new Path($parts, $parameters, $this->basepath . $parameter))->value();
-
-            }
-
-            throw new WrongParameterFormatException($format, $parameter);
-
-        }
-
-        return $basepath;
     }
 
     /**
@@ -48,5 +50,40 @@ class Path
     private function split(array $list): array
     {
         return [array_shift($list), $list];
+    }
+
+    /**
+     * Return the path value by recursively merging the parts, replacing the
+     * variable ones with parameters. Unfortunately can't use __toString because
+     * it may throw exceptions.
+     *
+     * @return string
+     * @throws \Ellipse\FastRoute\Exceptions\WrongParameterFormatException
+     */
+    public function value(): string
+    {
+        if (count($this->parts) > 0) {
+
+            [$part, $parts] = $this->split($this->parts);
+
+            if (is_array($part)) {
+
+                [$parameter, $parameters] = $this->split($this->parameters);
+
+                if (preg_match('~^' . $part[1] . '$~', (string) $parameter) !== 0) {
+
+                    return $parameter . (new Path($this->name, $parts, $parameters))->value();
+
+                }
+
+                throw new WrongParameterFormatException($parameter, $this->name, $part[0], $part[1]);
+
+            }
+
+            return $part . (new Path($this->name, $parts, $this->parameters))->value();
+
+        }
+
+        return '';
     }
 }
