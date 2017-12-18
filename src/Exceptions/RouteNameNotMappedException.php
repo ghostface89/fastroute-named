@@ -4,8 +4,6 @@ namespace Ellipse\FastRoute\Exceptions;
 
 use RuntimeException;
 
-use Ellipse\Router\Exceptions\RouterAdapterExceptionInterface;
-
 class RouteNameNotMappedException extends RuntimeException implements FastRouteExceptionInterface
 {
     public function __construct(string $name)
