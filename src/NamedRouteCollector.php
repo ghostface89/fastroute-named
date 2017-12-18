@@ -5,6 +5,7 @@ namespace Ellipse\FastRoute;
 use FastRoute\RouteCollector;
 use FastRoute\RouteParser;
 
+use Ellipse\FastRoute\Exceptions\RouteNameNotAStringException;
 use Ellipse\FastRoute\Exceptions\RouteNameNotMappedException;
 use Ellipse\FastRoute\Exceptions\RouteNameAlreadyMappedException;
 
@@ -66,16 +67,22 @@ class NamedRouteCollector
      * Associate non empty name with the given route pattern, then proxy the
      * delegate ->addRoute() method.
      *
-     * @param string            $name
-     * @param string|string[]   $httpMethod
-     * @param string            $route
-     * @param mixed             $handler
+     * @param mixed ...$params
      * @return void
+     * @throws \Ellipse\FastRoute\Exceptions\RouteNameNotAStringException
      * @throws \Ellipse\FastRoute\Exceptions\RouteNameAlreadyMappedException
      */
-    public function addRoute(string $name, $httpMethod, $route, $handler): void
+    public function addRoute(...$params)
     {
-        if ($name != '') {
+        if (count($params) == 4) {
+
+            $name = array_shift($params);
+
+            if (! is_string($name)) {
+
+                throw new RouteNameNotAStringException($name);
+
+            }
 
             if (array_key_exists($name, $this->name2pattern)) {
 
@@ -83,11 +90,39 @@ class NamedRouteCollector
 
             }
 
-            $this->name2pattern[$name] = $route;
+            if ($name != '') {
+
+                $this->name2pattern[$name] = $params[1];
+
+            }
 
         }
 
-        $this->delegate->addRoute($httpMethod, $route, $handler);
+        $this->delegate->addRoute(...$params);
+    }
+
+    /**
+     * Handle shortcut.
+     *
+     * @param mixed $methods
+     * @param mixed ...$params
+     * @return void
+     */
+    private function shortcut($methods, ...$params)
+    {
+        if (count($params) == 3) {
+
+            $name = array_shift($params);
+
+            $params = array_merge([$name], [$methods], $params);
+
+            $this->addRoute(...$params);
+
+        } else {
+
+            $this->addRoute($methods, ...$params);
+
+        }
     }
 
     /**
@@ -95,13 +130,12 @@ class NamedRouteCollector
      *
      * This is simply an alias of $this->addRoute('GET', $route, $handler)
      *
-     * @param string    $name
-     * @param string    $route
-     * @param mixed     $handler
+     * @param mixed ...$params
+     * @return void
      */
-    public function get(string $name, $route, $handler): void
+    public function get(...$params)
     {
-        $this->addRoute($name, 'GET', $route, $handler);
+        $this->shortcut('GET', ...$params);
     }
 
     /**
@@ -109,13 +143,12 @@ class NamedRouteCollector
      *
      * This is simply an alias of $this->addRoute('POST', $route, $handler)
      *
-     * @param string    $name
-     * @param string    $route
-     * @param mixed     $handler
+     * @param mixed ...$params
+     * @return void
      */
-    public function post(string $name, $route, $handler): void
+    public function post(...$params)
     {
-        $this->addRoute($name, 'POST', $route, $handler);
+        $this->shortcut('POST', ...$params);
     }
 
     /**
@@ -123,13 +156,12 @@ class NamedRouteCollector
      *
      * This is simply an alias of $this->addRoute('PUT', $route, $handler)
      *
-     * @param string    $name
-     * @param string    $route
-     * @param mixed     $handler
+     * @param mixed ...$params
+     * @return void
      */
-    public function put(string $name, $route, $handler): void
+    public function put(...$params)
     {
-        $this->addRoute($name, 'PUT', $route, $handler);
+        $this->shortcut('PUT', ...$params);
     }
 
     /**
@@ -137,13 +169,12 @@ class NamedRouteCollector
      *
      * This is simply an alias of $this->addRoute('DELETE', $route, $handler)
      *
-     * @param string    $name
-     * @param string    $route
-     * @param mixed     $handler
+     * @param mixed ...$params
+     * @return void
      */
-    public function delete(string $name, $route, $handler): void
+    public function delete(...$params)
     {
-        $this->addRoute($name, 'DELETE', $route, $handler);
+        $this->shortcut('DELETE', ...$params);
     }
 
     /**
@@ -151,13 +182,12 @@ class NamedRouteCollector
      *
      * This is simply an alias of $this->addRoute('PATCH', $route, $handler)
      *
-     * @param string    $name
-     * @param string    $route
-     * @param mixed     $handler
+     * @param mixed ...$params
+     * @return void
      */
-    public function patch(string $name, $route, $handler): void
+    public function patch(...$params)
     {
-        $this->addRoute($name, 'PATCH', $route, $handler);
+        $this->shortcut('PATCH', ...$params);
     }
 
     /**
@@ -165,13 +195,12 @@ class NamedRouteCollector
      *
      * This is simply an alias of $this->addRoute('HEAD', $route, $handler)
      *
-     * @param string    $name
-     * @param string    $route
-     * @param mixed     $handler
+     * @param mixed ...$params
+     * @return void
      */
-    public function head(string $name, $route, $handler): void
+    public function head(...$params)
     {
-        $this->addRoute($name, 'HEAD', $route, $handler);
+        $this->shortcut('HEAD', ...$params);
     }
 
     /**
