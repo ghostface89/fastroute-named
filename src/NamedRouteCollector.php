@@ -102,6 +102,23 @@ class NamedRouteCollector
     }
 
     /**
+     * Proxy the delegate ->addGroup() method with a callback using this named
+     * route collector.
+     *
+     * @param string    $prefix
+     * @param callable  $callback
+     * @return void
+     */
+    public function addGroup($prefix, callable $callback)
+    {
+        $this->delegate->addGroup($prefix, function () use ($callback) {
+
+            $callback($this);
+
+        });
+    }
+
+    /**
      * Handle shortcut.
      *
      * @param mixed $methods

@@ -2,9 +2,11 @@
 
 use function Eloquent\Phony\Kahlan\mock;
 use function Eloquent\Phony\Kahlan\partialMock;
+use function Eloquent\Phony\Kahlan\anInstanceOf;
 
 use FastRoute\RouteCollector;
 use FastRoute\RouteParser;
+use FastRoute\DataGenerator;
 
 use Ellipse\FastRoute\NamedRouteCollector;
 use Ellipse\FastRoute\RoutePattern;
@@ -175,6 +177,40 @@ describe('NamedRouteCollector', function () {
                 expect($test)->toEqual($data);
 
             });
+
+        });
+
+    });
+
+    describe('->addGroup()', function () {
+
+        it('should proxy the delegate', function () {
+
+            $this->collector->addGroup('prefix', function ($r) {
+
+                $r->addRoute('name', 'GET', 'pattern', 'handler');
+
+            });
+
+            $this->delegate->addGroup->calledWith('prefix', anInstanceOf(Closure::class));
+
+        });
+
+        it('should proxy the delegate with a callback taking the named route collector as parameter', function () {
+
+            $mock = partialMock(NamedRouteCollector::class, [
+                new RouteCollector(new RouteParser\Std, new DataGenerator\GroupCountBased),
+            ]);
+
+            $collector = $mock->get();
+
+            $collector->addGroup('prefix', function ($r) {
+
+                $r->addRoute('name', 'GET', 'pattern', 'handler');
+
+            });
+
+            $mock->addRoute->calledWith('name', 'GET', 'pattern', 'handler');
 
         });
 
