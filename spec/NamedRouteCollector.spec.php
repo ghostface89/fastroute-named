@@ -1,5 +1,6 @@
 <?php
 
+use function Eloquent\Phony\Kahlan\stub;
 use function Eloquent\Phony\Kahlan\mock;
 use function Eloquent\Phony\Kahlan\partialMock;
 use function Eloquent\Phony\Kahlan\anInstanceOf;
@@ -8,15 +9,18 @@ use FastRoute\RouteCollector;
 use FastRoute\RouteParser;
 use FastRoute\DataGenerator;
 
-use Ellipse\FastRoute\NamedRouteCollector;
+use Ellipse\FastRoute\Map;
 use Ellipse\FastRoute\RoutePattern;
+use Ellipse\FastRoute\NamedRouteCollector;
 use Ellipse\FastRoute\Exceptions\RouteNameNotAStringException;
-use Ellipse\FastRoute\Exceptions\RouteNameNotMappedException;
-use Ellipse\FastRoute\Exceptions\RouteNameAlreadyMappedException;
 
 describe('NamedRouteCollector', function () {
 
     beforeEach(function () {
+
+        $this->map = mock(Map::class);
+
+        allow(Map::class)->toBe($this->map->get());
 
         $this->delegate = mock(RouteCollector::class);
 
@@ -26,41 +30,15 @@ describe('NamedRouteCollector', function () {
 
     describe('->pattern()', function () {
 
-        context('when the given name is associated with a route pattern', function () {
+        it('should proxy the map ->pattern() method', function () {
 
-            it('should return a new RoutePattern', function () {
+            $pattern = mock(RoutePattern::class)->get();
 
-                $parser = new RouteParser\Std;
+            $this->map->pattern->with('name')->returns($pattern);
 
-                $signatures = $parser->parse('pattern');
+            $test = $this->collector->pattern('name');
 
-                $this->collector->addRoute('name', 'GET', 'pattern', 'handler');
-
-                $test = $this->collector->pattern('name');
-
-                $pattern = new RoutePattern('name', $signatures);
-
-                expect($test)->toEqual($pattern);
-
-            });
-
-        });
-
-        context('when the given name is associated with a route pattern', function () {
-
-            it('should throw a RouteNameNotMappedException', function () {
-
-                $test = function () {
-
-                    $this->collector->pattern('name');
-
-                };
-
-                $exception = new RouteNameNotMappedException('name');
-
-                expect($test)->toThrow($exception);
-
-            });
+            expect($test)->toBe($pattern);
 
         });
 
@@ -72,9 +50,17 @@ describe('NamedRouteCollector', function () {
 
             it('should proxy the delegate', function () {
 
-                $this->collector->addRoute('GET', 'pattern', 'handler');
+                $this->collector->addRoute('GET', '/pattern', 'handler');
 
-                $this->delegate->addRoute->calledWith('GET', 'pattern', 'handler');
+                $this->delegate->addRoute->calledWith('GET', '/pattern', 'handler');
+
+            });
+
+            it('should proxy the map ->associate() method with an empty name', function () {
+
+                $this->collector->addRoute('GET', '/pattern', 'handler');
+
+                $this->map->associate->calledWith('', '/pattern');
 
             });
 
@@ -82,99 +68,41 @@ describe('NamedRouteCollector', function () {
 
         context('when a name is given', function () {
 
+            context('when the given name is a string', function () {
+
+                it('should proxy the delegate', function () {
+
+                    $this->collector->addRoute('name', 'GET', '/pattern', 'handler');
+
+                    $this->delegate->addRoute->calledWith('GET', '/pattern', 'handler');
+
+                });
+
+                it('should proxy the map ->associate() method', function () {
+
+                    $this->collector->addRoute('name', 'GET', '/pattern', 'handler');
+
+                    $this->map->associate->calledWith('name', '/pattern');
+
+                });
+
+            });
+
             context('when the given name is not a string', function () {
 
-                it('should throw a NameNotAStringException', function () {
+                it('should throw a RouteNameNotAStringException', function () {
 
                     $test = function () {
 
-                        $this->collector->addRoute(['name'], 'GET', 'pattern', 'handler');
+                        $this->collector->addRoute(1, 'GET', '/pattern', 'handler');
 
                     };
 
-                    $exception = new RouteNameNotAStringException(['name']);
+                    $exception = new RouteNameNotAStringException(1);
 
                     expect($test)->toThrow($exception);
 
                 });
-
-            });
-
-            context('when the given name is a string', function () {
-
-                context('when the given name is empty', function () {
-
-                    it('should proxy the delegate without mapping the name to the pattern', function () {
-
-                        $this->collector->addRoute('', 'GET', 'pattern', 'handler');
-
-                        $test = function () { $this->collector->pattern(''); };
-
-                        $exception = new RouteNameNotMappedException('');
-
-                        expect($test)->toThrow($exception);
-
-                        $this->delegate->addRoute->calledWith('GET', 'pattern', 'handler');
-
-                    });
-
-                });
-
-                context('when the given name is not empty', function () {
-
-                    context('when the given name is not already associated with a route pattern', function () {
-
-                        it('should proxy the delegate and map the name to the pattern', function () {
-
-                            $this->collector->addRoute('name', 'GET', 'pattern', 'handler');
-
-                            $test = function () { $this->collector->pattern('name'); };
-
-                            expect($test)->not->toThrow();
-
-                            $this->delegate->addRoute->calledWith('GET', 'pattern', 'handler');
-
-                        });
-
-                    });
-
-                    context('when the given name is already associated with a route pattern', function () {
-
-                        it('should throw a RouteNameAlreadyMappedException', function () {
-
-                            $this->collector->addRoute('name', 'GET', 'pattern', 'handler');
-
-                            $test = function () {
-
-                                $this->collector->addRoute('name', 'GET', 'pattern', 'handler');
-
-                            };
-
-                            $exception = new RouteNameAlreadyMappedException('name');
-
-                            expect($test)->toThrow($exception);
-
-                        });
-
-                    });
-
-                });
-
-            });
-
-        });
-
-        describe('->getData()', function () {
-
-            it('should proxy the delegate', function () {
-
-                $data = ['route1' => 'data1', 'route2' => 'data2'];
-
-                $this->delegate->getData->returns($data);
-
-                $test = $this->collector->getData();
-
-                expect($test)->toEqual($data);
 
             });
 
@@ -184,33 +112,123 @@ describe('NamedRouteCollector', function () {
 
     describe('->addGroup()', function () {
 
-        it('should proxy the delegate', function () {
+        beforeEach(function () {
 
-            $this->collector->addGroup('prefix', function ($r) {
+            $this->concrete = new NamedRouteCollector(
+                new RouteCollector(new RouteParser\Std, new DataGenerator\GroupCountBased)
+            );
 
-                $r->addRoute('name', 'GET', 'pattern', 'handler');
-
-            });
-
-            $this->delegate->addGroup->calledWith('prefix', anInstanceOf(Closure::class));
+            $this->callback = stub();
 
         });
 
-        it('should proxy the delegate with a callback taking the named route collector as parameter', function () {
+        context('when no name is given', function () {
 
-            $mock = partialMock(NamedRouteCollector::class, [
-                new RouteCollector(new RouteParser\Std, new DataGenerator\GroupCountBased),
-            ]);
+            it('should proxy the delegate', function () {
 
-            $collector = $mock->get();
+                $this->collector->addGroup('/route_prefix', $this->callback);
 
-            $collector->addGroup('prefix', function ($r) {
-
-                $r->addRoute('name', 'GET', 'pattern', 'handler');
+                $this->delegate->addGroup->calledWith('/route_prefix', anInstanceOf(Closure::class));
 
             });
 
-            $mock->addRoute->calledWith('name', 'GET', 'pattern', 'handler');
+            it('should call the given callback with the named route collector', function () {
+
+                $this->concrete->addGroup('/route_prefix', $this->callback);
+
+                $this->callback->calledWith($this->concrete);
+
+            });
+
+            it('should call the map ->addPrefix() with an empty prefix', function () {
+
+                $this->concrete->addGroup('/route_prefix', $this->callback);
+
+                $this->map->addPrefix->calledWith('');
+
+            });
+
+            it('should call the map ->removePrefix()', function () {
+
+                $this->concrete->addGroup('/route_prefix', $this->callback);
+
+                $this->map->removePrefix->called();
+
+            });
+
+        });
+
+        context('when a name is given', function () {
+
+            context('when the given name is a string', function () {
+
+                it('should proxy the delegate', function () {
+
+                    $this->collector->addGroup('name_prefix', '/route_prefix', $this->callback);
+
+                    $this->delegate->addGroup->calledWith('/route_prefix', anInstanceOf(Closure::class));
+
+                });
+
+                it('should call the given callback with the named route collector', function () {
+
+                    $this->concrete->addGroup('name_prefix', '/route_prefix', $this->callback);
+
+                    $this->callback->calledWith($this->concrete);
+
+                });
+
+                it('should call the map ->addPrefix() with an empty prefix', function () {
+
+                    $this->concrete->addGroup('name_prefix', '/route_prefix', $this->callback);
+
+                    $this->map->addPrefix->calledWith('name_prefix');
+
+                });
+
+                it('should call the map ->removePrefix()', function () {
+
+                    $this->concrete->addGroup('name_prefix', '/route_prefix', $this->callback);
+
+                    $this->map->removePrefix->called();
+
+                });
+
+            });
+
+            context('when the given name is not a string', function () {
+
+                it('should throw a RouteNameNotAStringException', function () {
+
+                    $test = function () {
+
+                        $this->concrete->addGroup(1, '/route_prefix', $this->callback);
+
+                    };
+
+                    $exception = new RouteNameNotAStringException(1);
+
+                    expect($test)->toThrow($exception);
+
+                });
+
+            });
+
+        });
+
+    });
+
+    describe('->getData()', function () {
+
+        it('should proxy the delegate', function () {
+
+            $data = ['route1' => 'data1', 'route2' => 'data2'];
+
+            $this->delegate->getData->returns($data);
+
+            $test = $this->collector->getData();
+
+            expect($test)->toEqual($data);
 
         });
 
@@ -234,9 +252,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->get('pattern', 'handler');
+                    $collection->get('/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('GET', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('GET', '/pattern', 'handler');
 
                 });
 
@@ -248,9 +266,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->get('name', 'pattern', 'handler');
+                    $collection->get('name', '/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('name', 'GET', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('name', 'GET', '/pattern', 'handler');
 
                 });
 
@@ -266,13 +284,14 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->post('pattern', 'handler');
+                    $collection->post('/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('POST', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('POST', '/pattern', 'handler');
 
                 });
 
             });
+
 
             context('when a name is given', function () {
 
@@ -280,9 +299,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->post('name', 'pattern', 'handler');
+                    $collection->post('name', '/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('name', 'POST', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('name', 'POST', '/pattern', 'handler');
 
                 });
 
@@ -298,9 +317,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->put('pattern', 'handler');
+                    $collection->put('/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('PUT', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('PUT', '/pattern', 'handler');
 
                 });
 
@@ -312,9 +331,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->put('name', 'pattern', 'handler');
+                    $collection->put('name', '/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('name', 'PUT', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('name', 'PUT', '/pattern', 'handler');
 
                 });
 
@@ -330,9 +349,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->delete('pattern', 'handler');
+                    $collection->delete('/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('DELETE', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('DELETE', '/pattern', 'handler');
 
                 });
 
@@ -344,9 +363,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->delete('name', 'pattern', 'handler');
+                    $collection->delete('name', '/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('name', 'DELETE', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('name', 'DELETE', '/pattern', 'handler');
 
                 });
 
@@ -362,9 +381,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->patch('pattern', 'handler');
+                    $collection->patch('/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('PATCH', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('PATCH', '/pattern', 'handler');
 
                 });
 
@@ -376,9 +395,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->patch('name', 'pattern', 'handler');
+                    $collection->patch('name', '/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('name', 'PATCH', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('name', 'PATCH', '/pattern', 'handler');
 
                 });
 
@@ -394,9 +413,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->head('pattern', 'handler');
+                    $collection->head('/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('HEAD', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('HEAD', '/pattern', 'handler');
 
                 });
 
@@ -408,9 +427,9 @@ describe('NamedRouteCollector', function () {
 
                     $collection = $this->collector->get();
 
-                    $collection->head('name', 'pattern', 'handler');
+                    $collection->head('name', '/pattern', 'handler');
 
-                    $this->collector->addRoute->calledWith('name', 'HEAD', 'pattern', 'handler');
+                    $this->collector->addRoute->calledWith('name', 'HEAD', '/pattern', 'handler');
 
                 });
 

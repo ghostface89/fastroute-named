@@ -3,11 +3,8 @@
 namespace Ellipse\FastRoute;
 
 use FastRoute\RouteCollector;
-use FastRoute\RouteParser;
 
 use Ellipse\FastRoute\Exceptions\RouteNameNotAStringException;
-use Ellipse\FastRoute\Exceptions\RouteNameNotMappedException;
-use Ellipse\FastRoute\Exceptions\RouteNameAlreadyMappedException;
 
 class NamedRouteCollector
 {
@@ -19,18 +16,11 @@ class NamedRouteCollector
     private $delegate;
 
     /**
-     * Associative array of name => pattern pairs.
+     * The name to route pattern map.
      *
-     * @var array
+     * @var \Ellipse\FastRoute\Map
      */
-    private $name2pattern = [];
-
-    /**
-     * The fastroute parser.
-     *
-     * @var \FastRoute\RouteParser
-     */
-    private $parser;
+    private $map;
 
     /**
      * Set up a named route collector with the given delegate.
@@ -40,184 +30,74 @@ class NamedRouteCollector
     public function __construct(RouteCollector $delegate)
     {
         $this->delegate = $delegate;
-        $this->parser = new RouteParser\Std;
+        $this->map = new Map;
     }
 
     /**
-     * Return the route pattern associated with the given name.
+     * Proxy the map ->pattern() method.
      *
      * @param string $name
      * @return \Ellipse\FastRoute\RoutePattern
-     * @throws \Ellipse\FastRoute\Exceptions\RouteNameNotMappedException
      */
     public function pattern(string $name): RoutePattern
     {
-        if (array_key_exists($name, $this->name2pattern)) {
-
-            $signatures = $this->parser->parse($this->name2pattern[$name]);
-
-            return new RoutePattern($name, $signatures);
-
-        }
-
-        throw new RouteNameNotMappedException($name);
+        return $this->map->pattern($name);
     }
 
     /**
-     * Associate non empty name with the given route pattern, then proxy the
-     * delegate ->addRoute() method.
+     * Proxy the delegate ->addRoute() method. Allow to pass an optional name as
+     * first argument which gets mapped to the route pattern.
      *
-     * @param mixed ...$params
+     * @param mixed ...$args
      * @return void
-     * @throws \Ellipse\FastRoute\Exceptions\RouteNameNotAStringException
-     * @throws \Ellipse\FastRoute\Exceptions\RouteNameAlreadyMappedException
      */
-    public function addRoute(...$params)
+    public function addRoute(...$args)
     {
-        if (count($params) == 4) {
+        $name = count($args) == 4 ? array_shift($args) : '';
+        $httpMethod = array_shift($args);
+        $route = array_shift($args);
+        $handler = array_shift($args);
 
-            $name = array_shift($params);
+        if (! is_string($name)) {
 
-            if (! is_string($name)) {
-
-                throw new RouteNameNotAStringException($name);
-
-            }
-
-            if (array_key_exists($name, $this->name2pattern)) {
-
-                throw new RouteNameAlreadyMappedException($name);
-
-            }
-
-            if ($name != '') {
-
-                $this->name2pattern[$name] = $params[1];
-
-            }
+            throw new RouteNameNotAStringException($name);
 
         }
 
-        $this->delegate->addRoute(...$params);
+        $this->map->associate($name, $route);
+
+        $this->delegate->addRoute($httpMethod, $route, $handler);
     }
 
     /**
-     * Proxy the delegate ->addGroup() method with a callback using this named
-     * route collector.
+     * Proxy the delegate ->addGroup() by passing this named route collector to
+     * the given callback. Allow to pass an optional name prefix which gets
+     * preprended to all names defined in the callback.
      *
-     * @param string    $prefix
-     * @param callable  $callback
+     * @param mixed ...$args
      * @return void
      */
-    public function addGroup($prefix, callable $callback)
+    public function addGroup(...$args)
     {
-        $this->delegate->addGroup($prefix, function () use ($callback) {
+        $name_prefix = count($args) == 3 ? array_shift($args) : '';
+        $route_prefix = array_shift($args);
+        $callback = array_shift($args);
+
+        if (! is_string($name_prefix)) {
+
+            throw new RouteNameNotAStringException($name_prefix);
+
+        }
+
+        $this->delegate->addGroup($route_prefix, function ($r) use ($name_prefix, $callback) {
+
+            $this->map->addPrefix($name_prefix);
 
             $callback($this);
 
+            $this->map->removePrefix();
+
         });
-    }
-
-    /**
-     * Handle shortcut.
-     *
-     * @param mixed $methods
-     * @param mixed ...$params
-     * @return void
-     */
-    private function shortcut($methods, ...$params)
-    {
-        if (count($params) == 3) {
-
-            $name = array_shift($params);
-
-            $params = array_merge([$name], [$methods], $params);
-
-            $this->addRoute(...$params);
-
-        } else {
-
-            $this->addRoute($methods, ...$params);
-
-        }
-    }
-
-    /**
-     * Adds a GET route to the collection
-     *
-     * This is simply an alias of $this->addRoute('GET', $route, $handler)
-     *
-     * @param mixed ...$params
-     * @return void
-     */
-    public function get(...$params)
-    {
-        $this->shortcut('GET', ...$params);
-    }
-
-    /**
-     * Adds a POST route to the collection
-     *
-     * This is simply an alias of $this->addRoute('POST', $route, $handler)
-     *
-     * @param mixed ...$params
-     * @return void
-     */
-    public function post(...$params)
-    {
-        $this->shortcut('POST', ...$params);
-    }
-
-    /**
-     * Adds a PUT route to the collection
-     *
-     * This is simply an alias of $this->addRoute('PUT', $route, $handler)
-     *
-     * @param mixed ...$params
-     * @return void
-     */
-    public function put(...$params)
-    {
-        $this->shortcut('PUT', ...$params);
-    }
-
-    /**
-     * Adds a DELETE route to the collection
-     *
-     * This is simply an alias of $this->addRoute('DELETE', $route, $handler)
-     *
-     * @param mixed ...$params
-     * @return void
-     */
-    public function delete(...$params)
-    {
-        $this->shortcut('DELETE', ...$params);
-    }
-
-    /**
-     * Adds a PATCH route to the collection
-     *
-     * This is simply an alias of $this->addRoute('PATCH', $route, $handler)
-     *
-     * @param mixed ...$params
-     * @return void
-     */
-    public function patch(...$params)
-    {
-        $this->shortcut('PATCH', ...$params);
-    }
-
-    /**
-     * Adds a HEAD route to the collection
-     *
-     * This is simply an alias of $this->addRoute('HEAD', $route, $handler)
-     *
-     * @param mixed ...$params
-     * @return void
-     */
-    public function head(...$params)
-    {
-        $this->shortcut('HEAD', ...$params);
     }
 
     /**
@@ -225,8 +105,104 @@ class NamedRouteCollector
      *
      * @return array
      */
-    public function getData(): array
+    public function getData()
     {
         return $this->delegate->getData();
+    }
+
+    /**
+     * Proxy the delegate ->get() method. Allow to pass an optional name as
+     * first argument which gets mapped to the route pattern.
+     *
+     * @param mixed ...$args
+     * @return void
+     */
+    public function get(...$args)
+    {
+        $this->shortcut('GET', ...$args);
+    }
+
+    /**
+     * Proxy the delegate ->post() method. Allow to pass an optional name as
+     * first argument which gets mapped to the route pattern.
+     *
+     * @param mixed ...$args
+     * @return void
+     */
+    public function post(...$args)
+    {
+        $this->shortcut('POST', ...$args);
+    }
+
+    /**
+     * Proxy the delegate ->put() method. Allow to pass an optional name as
+     * first argument which gets mapped to the route pattern.
+     *
+     * @param mixed ...$args
+     * @return void
+     */
+    public function put(...$args)
+    {
+        $this->shortcut('PUT', ...$args);
+    }
+
+    /**
+     * Proxy the delegate ->delete() method. Allow to pass an optional name as
+     * first argument which gets mapped to the route pattern.
+     *
+     * @param mixed ...$args
+     * @return void
+     */
+    public function delete(...$args)
+    {
+        $this->shortcut('DELETE', ...$args);
+    }
+
+    /**
+     * Proxy the delegate ->patch() method. Allow to pass an optional name as
+     * first argument which gets mapped to the route pattern.
+     *
+     * @param mixed ...$args
+     * @return void
+     */
+    public function patch(...$args)
+    {
+        $this->shortcut('PATCH', ...$args);
+    }
+
+    /**
+     * Proxy the delegate ->head() method. Allow to pass an optional name as
+     * first argument which gets mapped to the route pattern.
+     *
+     * @param mixed ...$args
+     * @return void
+     */
+    public function head(...$args)
+    {
+        $this->shortcut('HEAD', ...$args);
+    }
+
+    /**
+     * Utility method containing the logic used to add an optional name when
+     * using shortcuts.
+     *
+     * @param mixed ...$args
+     * @return void
+     */
+    private function shortcut($httpMethod, ...$args)
+    {
+        if (count($args) == 3) {
+
+            $name = array_shift($args);
+            array_unshift($args, $httpMethod);
+            array_unshift($args, $name);
+
+        } else {
+
+            array_unshift($args, $httpMethod);
+
+        }
+
+        $this->addRoute(...$args);
     }
 }

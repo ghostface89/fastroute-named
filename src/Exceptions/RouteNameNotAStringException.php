@@ -8,7 +8,7 @@ class RouteNameNotAStringException extends InvalidArgumentException implements F
 {
     public function __construct($name)
     {
-        $template = "The route name must be a string. %s given.";
+        $template = "Route names must be strings. %s given.";
 
         $msg = sprintf($template, is_object($name) ? get_class($name) : gettype($name));
 
