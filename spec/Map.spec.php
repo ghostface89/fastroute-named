@@ -1,5 +1,7 @@
 <?php
 
+use function Eloquent\Phony\Kahlan\mock;
+
 use FastRoute\RouteParser;
 
 use Ellipse\FastRoute\Map;
@@ -11,6 +13,15 @@ describe('Map', function () {
 
     beforeEach(function () {
 
+        $this->parser = mock(RouteParser\Std::class);
+
+        $this->parser->parse->with('/pattern')->returns(['/pattern']);
+        $this->parser->parse->with('/prefix/pattern')->returns(['/prefix/pattern']);
+        $this->parser->parse->with('/prefix1/pattern')->returns(['/prefix1/pattern']);
+        $this->parser->parse->with('/prefix1/prefix2/pattern')->returns(['/prefix1/prefix2/pattern']);
+
+        allow(RouteParser\Std::class)->toBe($this->parser->get());
+
         $this->map = new Map;
 
     });
@@ -21,13 +32,11 @@ describe('Map', function () {
 
             it('should return a new RoutePattern from the pattern associated with the given name', function () {
 
-                $parser = new RouteParser\Std;
-
                 $this->map->associate('name', '/pattern');
 
                 $test = $this->map->pattern('name');
 
-                $pattern = new RoutePattern('name', $parser->parse('/pattern'));
+                $pattern = new RoutePattern('name', ['/pattern']);
 
                 expect($test)->toEqual($pattern);
 
@@ -81,7 +90,7 @@ describe('Map', function () {
 
         });
 
-        context('when the map prefix is empty', function () {
+        context('when the name is not empty', function () {
 
             beforeEach(function () {
 
@@ -93,9 +102,11 @@ describe('Map', function () {
 
                 it('should associate the given name to the given route pattern', function () {
 
-                    $test = function () { $this->map->pattern('name'); };
+                    $test = $this->map->pattern('name');
 
-                    expect($test)->not->toThrow();
+                    $pattern = new RoutePattern('name', ['/pattern']);
+
+                    expect($test)->toEqual($pattern);
 
                 });
 
@@ -117,113 +128,197 @@ describe('Map', function () {
 
         });
 
-        context('when the map prefix is not empty', function () {
-
-            beforeEach(function () {
-
-                $this->map->addPrefix('prefix');
-
-                $this->map->associate('name', '/pattern');
-
-            });
-
-            context('when the prefixed name is not already associated to a route pattern', function () {
-
-                it('should associate the prefixed name to the given route pattern', function () {
-
-                    $test = function () { $this->map->pattern('prefix.name'); };
-
-                    expect($test)->not->toThrow();
-
-                });
-
-            });
-
-            context('when the prefixed name is already associated to a route pattern', function () {
-
-                it('should throw a RouteNameAlreadyMappedException', function () {
-
-                    $test = function () { $this->map->associate('name', '/pattern'); };
-
-                    $exception = new RouteNameAlreadyMappedException('prefix.name');
-
-                    expect($test)->toThrow($exception);
-
-                });
-
-            });
-
-        });
-
     });
 
-    describe('->withPrefix()', function () {
+    describe('->addNamePrefix()', function () {
 
-        it('should merge multiple prefixes spaced by a dot', function () {
+        it('should merge multiple name prefixes spaced by a dot', function () {
 
-            $this->map->addPrefix('prefix1');
-            $this->map->addPrefix('prefix2');
+            $this->map->addNamePrefix('prefix1');
+            $this->map->addNamePrefix('prefix2');
 
             $this->map->associate('name', '/pattern');
 
-            $test = function () { $this->map->pattern('prefix1.prefix2.name'); };
+            $test = $this->map->pattern('prefix1.prefix2.name');
 
-            expect($test)->not->toThrow();
+            $pattern = new RoutePattern('prefix1.prefix2.name', ['/pattern']);
+
+            expect($test)->toEqual($pattern);
+
+        });
+
+        it('should not use empty name prefixes', function () {
+
+            $this->map->addNamePrefix('prefix1');
+            $this->map->addNamePrefix('');
+            $this->map->addNamePrefix('prefix2');
+
+            $this->map->associate('name', '/pattern');
+
+            $test = $this->map->pattern('prefix1.prefix2.name');
+
+            $pattern = new RoutePattern('prefix1.prefix2.name', ['/pattern']);
+
+            expect($test)->toEqual($pattern);
 
         });
 
     });
 
-    describe('->removePrefix()', function () {
+    describe('->removeNamePrefix()', function () {
 
-        context('when there is only one prefix', function () {
+        context('when there is only one name prefix', function () {
 
-            it('should use an empty prefix', function () {
+            it('should use an empty name prefix', function () {
 
-                $this->map->addPrefix('prefix');
-                $this->map->removePrefix();
+                $this->map->addNamePrefix('prefix');
+                $this->map->removeNamePrefix();
 
                 $this->map->associate('name', '/pattern');
 
-                $test = function () { $this->map->pattern('name'); };
+                $test = $this->map->pattern('name');
 
-                expect($test)->not->toThrow();
+                $pattern = new RoutePattern('name', ['/pattern']);
+
+                expect($test)->toEqual($pattern);
 
             });
 
         });
 
-        context('when there is multiple prefixes', function () {
+        context('when there is multiple name prefixes', function () {
 
             it('should remove the last one', function () {
 
-                $this->map->addPrefix('prefix1');
-                $this->map->addPrefix('prefix2');
-                $this->map->removePrefix();
+                $this->map->addNamePrefix('prefix1');
+                $this->map->addNamePrefix('prefix2');
+                $this->map->removeNamePrefix();
 
                 $this->map->associate('name', '/pattern');
 
-                $test = function () { $this->map->pattern('prefix1.name'); };
+                $test = $this->map->pattern('prefix1.name');
 
-                expect($test)->not->toThrow();
+                $pattern = new RoutePattern('prefix1.name', ['/pattern']);
+
+                expect($test)->toEqual($pattern);
 
             });
 
         });
 
-        context('when the last prefix is empty', function () {
+        context('when the last name prefix is empty', function () {
 
-            it('should use the same prefix', function () {
+            it('should use the same name prefix', function () {
 
-                $this->map->addPrefix('prefix');
-                $this->map->addPrefix('');
-                $this->map->removePrefix();
+                $this->map->addNamePrefix('prefix');
+                $this->map->addNamePrefix('');
+                $this->map->removeNamePrefix();
 
                 $this->map->associate('name', '/pattern');
 
-                $test = function () { $this->map->pattern('prefix.name'); };
+                $test = $this->map->pattern('prefix.name');
 
-                expect($test)->not->toThrow();
+                $pattern = new RoutePattern('prefix.name', ['/pattern']);
+
+                expect($test)->toEqual($pattern);
+
+            });
+
+        });
+
+    });
+
+    describe('->addPatternPrefix()', function () {
+
+        it('should merge multiple route pattern prefixes', function () {
+
+            $this->map->addPatternPrefix('/prefix1');
+            $this->map->addPatternPrefix('/prefix2');
+
+            $this->map->associate('name', '/pattern');
+
+            $test = $this->map->pattern('name');
+
+            $pattern = new RoutePattern('name', ['/prefix1/prefix2/pattern']);
+
+            expect($test)->toEqual($pattern);
+
+        });
+
+        it('should not use empty route pattern prefixes', function () {
+
+            $this->map->addPatternPrefix('/prefix1');
+            $this->map->addPatternPrefix('');
+            $this->map->addPatternPrefix('/prefix2');
+
+            $this->map->associate('name', '/pattern');
+
+            $test = $this->map->pattern('name');
+
+            $pattern = new RoutePattern('name', ['/prefix1/prefix2/pattern']);
+
+            expect($test)->toEqual($pattern);
+
+        });
+
+    });
+
+    describe('->removePatternPrefix()', function () {
+
+        context('when there is only one route pattern prefix', function () {
+
+            it('should use an empty route pattern prefix', function () {
+
+                $this->map->addPatternPrefix('/prefix');
+                $this->map->removePatternPrefix();
+
+                $this->map->associate('name', '/pattern');
+
+                $test = $this->map->pattern('name');
+
+                $pattern = new RoutePattern('name', ['/pattern']);
+
+                expect($test)->toEqual($pattern);
+
+            });
+
+        });
+
+        context('when there is multiple route pattern prefixes', function () {
+
+            it('should remove the last one', function () {
+
+                $this->map->addPatternPrefix('/prefix1');
+                $this->map->addPatternPrefix('/prefix2');
+                $this->map->removePatternPrefix();
+
+                $this->map->associate('name', '/pattern');
+
+                $test = $this->map->pattern('name');
+
+                $pattern = new RoutePattern('name', ['/prefix1/pattern']);
+
+                expect($test)->toEqual($pattern);
+
+            });
+
+        });
+
+        context('when the last route pattern prefix is empty', function () {
+
+            it('should use the same route pattern prefix', function () {
+
+                $this->map->addPatternPrefix('/prefix');
+                $this->map->addPatternPrefix('');
+                $this->map->removePatternPrefix();
+
+                $this->map->associate('name', '/pattern');
+
+                $test = $this->map->pattern('name');
+
+                $pattern = new RoutePattern('name', ['/prefix/pattern']);
+
+                expect($test)->toEqual($pattern);
 
             });
 

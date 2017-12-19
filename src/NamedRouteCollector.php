@@ -89,13 +89,15 @@ class NamedRouteCollector
 
         }
 
-        $this->delegate->addGroup($route_prefix, function ($r) use ($name_prefix, $callback) {
+        $this->delegate->addGroup($route_prefix, function ($r) use ($name_prefix, $route_prefix, $callback) {
 
-            $this->map->addPrefix($name_prefix);
+            $this->map->addNamePrefix($name_prefix);
+            $this->map->addPatternPrefix($route_prefix);
 
             $callback($this);
 
-            $this->map->removePrefix();
+            $this->map->removeNamePrefix();
+            $this->map->removePatternPrefix();
 
         });
     }

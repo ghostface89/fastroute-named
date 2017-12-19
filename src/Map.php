@@ -10,11 +10,18 @@ use Ellipse\FastRoute\Exceptions\RouteNameAlreadyMappedException;
 class Map
 {
     /**
-     * The list of prefixes to prepend to the route names.
+     * The list of prefixes to prepend to the names.
      *
      * @var string
      */
-    private $prefixes = [];
+    private $names = [];
+
+    /**
+     * The list of prefixes to prepend to the route patterns.
+     *
+     * @var string
+     */
+    private $patterns = [];
 
     /**
      * The associative array of name => route pattern pairs.
@@ -72,50 +79,88 @@ class Map
     {
         if ($name != '') {
 
-            $prefixed = $this->prefixed($name);
+            $prefixed_name = $this->prefixedName($name);
+            $prefixed_pattern = $this->prefixedPattern($route);
 
-            if (array_key_exists($prefixed, $this->name2pattern)) {
+            if (array_key_exists($prefixed_name, $this->name2pattern)) {
 
-                throw new RouteNameAlreadyMappedException($prefixed);
+                throw new RouteNameAlreadyMappedException($prefixed_name);
 
             }
 
-            $this->name2pattern[$prefixed] = $route;
+            $this->name2pattern[$prefixed_name] = $prefixed_pattern;
 
         }
     }
 
     /**
-     * Return the givne name prefixed with the current prefix (spaced by a dot).
+     * Return the given name prefixed with the current name prefixes (spaced by
+     * a dot).
      *
      * @param string $name
      * @return string
      */
-    private function prefixed(string $name): string
+    private function prefixedName(string $name): string
     {
-        $parts = array_merge($this->prefixes, [$name]);
+        $parts = array_merge($this->names, [$name]);
 
         return implode('.', array_filter($parts));
     }
 
     /**
-     * Add a prefix to the current prefix (spaced by a dot).
+     * Return the given route pattern prefixed with the current route pattern
+     * prefixes.
+     *
+     * @param string $pattern
+     * @return string
+     */
+    private function prefixedPattern(string $pattern): string
+    {
+        $parts = array_merge($this->patterns, [$pattern]);
+
+        return implode('', array_filter($parts));
+    }
+
+    /**
+     * Add a name prefix to the current name prefixes (spaced by a dot).
      *
      * @param string $name
      * @return void
      */
-    public function addPrefix(string $prefix): void
+    public function addNamePrefix(string $prefix): void
     {
-        $this->prefixes[] = $prefix;
+        $this->names[] = $prefix;
     }
 
     /**
-     * Remove the last prefix to the current prefix.
+     * Remove the last name prefix from the current name prefixes.
      *
      * @return void
      */
-    public function removePrefix(): void
+    public function removeNamePrefix(): void
     {
-        array_pop($this->prefixes);
+        array_pop($this->names);
+    }
+
+    /**
+     * Add a route pattern prefix to the current route pattern prefixes.
+     *
+     * @param string $name
+     * @return void
+     */
+    public function addPatternPrefix(string $prefix): void
+    {
+        $this->patterns[] = $prefix;
+    }
+
+    /**
+     * Remove the last route pattern prefix from the current route pattern
+     * prefixes.
+     *
+     * @return void
+     */
+    public function removePatternPrefix(): void
+    {
+        array_pop($this->patterns);
     }
 }

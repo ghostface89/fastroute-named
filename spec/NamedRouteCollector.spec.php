@@ -140,19 +140,35 @@ describe('NamedRouteCollector', function () {
 
             });
 
-            it('should call the map ->addPrefix() with an empty prefix', function () {
+            it('should call the map ->addNamePrefix() with an empty prefix', function () {
 
                 $this->concrete->addGroup('/route_prefix', $this->callback);
 
-                $this->map->addPrefix->calledWith('');
+                $this->map->addNamePrefix->calledWith('');
 
             });
 
-            it('should call the map ->removePrefix()', function () {
+            it('should call the map ->addPatternPrefix() with the given route pattern prefix', function () {
 
                 $this->concrete->addGroup('/route_prefix', $this->callback);
 
-                $this->map->removePrefix->called();
+                $this->map->addPatternPrefix->calledWith('/route_prefix');
+
+            });
+
+            it('should call the map ->removeNamePrefix()', function () {
+
+                $this->concrete->addGroup('/route_prefix', $this->callback);
+
+                $this->map->removeNamePrefix->called();
+
+            });
+
+            it('should call the map ->removePatternPrefix()', function () {
+
+                $this->concrete->addGroup('/route_prefix', $this->callback);
+
+                $this->map->removePatternPrefix->called();
 
             });
 
@@ -178,19 +194,35 @@ describe('NamedRouteCollector', function () {
 
                 });
 
-                it('should call the map ->addPrefix() with an empty prefix', function () {
+                it('should call the map ->addNamePrefix() with an empty prefix', function () {
 
                     $this->concrete->addGroup('name_prefix', '/route_prefix', $this->callback);
 
-                    $this->map->addPrefix->calledWith('name_prefix');
+                    $this->map->addNamePrefix->calledWith('name_prefix');
 
                 });
 
-                it('should call the map ->removePrefix()', function () {
+                it('should call the map ->addPatternPrefix() with the given route pattern prefix', function () {
 
                     $this->concrete->addGroup('name_prefix', '/route_prefix', $this->callback);
 
-                    $this->map->removePrefix->called();
+                    $this->map->addPatternPrefix->calledWith('/route_prefix');
+
+                });
+
+                it('should call the map ->removeNamePrefix()', function () {
+
+                    $this->concrete->addGroup('name_prefix', '/route_prefix', $this->callback);
+
+                    $this->map->removeNamePrefix->called();
+
+                });
+
+                it('should call the map ->removePatternPrefix()', function () {
+
+                    $this->concrete->addGroup('name_prefix', '/route_prefix', $this->callback);
+
+                    $this->map->removePatternPrefix->called();
 
                 });
 
