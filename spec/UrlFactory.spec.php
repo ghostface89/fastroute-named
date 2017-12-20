@@ -25,19 +25,21 @@ describe('UrlFactory', function () {
 
             $this->collector->pattern->with('name')->returns($this->pattern);
 
+            $this->url = mock(Url::class);
+
+            $this->url->__toString->returns('url');
+
         });
 
         context('when parameters, query parameters and a fragment are given', function () {
 
             it('should proxy the ->url() method of the RoutePattern returned by the named route collector', function () {
 
-                $url = mock(Url::class)->get();
-
-                $this->pattern->url->with(['p1', 'p2'], ['q1' => 'v1'], 'fragment')->returns($url);
+                $this->pattern->url->with(['p1', 'p2'], ['q1' => 'v1'], 'fragment')->returns($this->url);
 
                 $test = ($this->factory)('name', ['p1', 'p2'], ['q1' => 'v1'], 'fragment');
 
-                expect($test)->toBe($url);
+                expect($test)->toEqual('url');
 
             });
 
@@ -47,13 +49,11 @@ describe('UrlFactory', function () {
 
             it('should proxy the ->url() method of the RoutePattern with an empty parameters, query string and fragment', function () {
 
-                $url = mock(Url::class)->get();
-
-                $this->pattern->url->with([], [], '')->returns($url);
+                $this->pattern->url->with([], [], '')->returns($this->url);
 
                 $test = ($this->factory)('name');
 
-                expect($test)->toBe($url);
+                expect($test)->toEqual('url');
 
             });
 

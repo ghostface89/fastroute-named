@@ -29,10 +29,10 @@ class UrlFactory
      * @param array     $parameters
      * @param array     $query
      * @param string    $fragment
-     * @return \Ellipse\FastRoute\Url
+     * @return string
      */
-    public function __invoke(string $name, array $parameters = [], array $query = [], string $fragment = ''): Url
+    public function __invoke(string $name, array $parameters = [], array $query = [], string $fragment = ''): string
     {
-        return $this->collector->pattern($name)->url($parameters, $query, $fragment);
+        return (string) $this->collector->pattern($name)->url($parameters, $query, $fragment);
     }
 }
