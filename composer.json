@@ -21,7 +21,7 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
-        "php": ">=7.1",
+        "php": ">=7.0",
         "nikic/fast-route": "^1.2"
     },
     "require-dev": {

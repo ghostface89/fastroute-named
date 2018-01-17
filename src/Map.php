@@ -75,7 +75,7 @@ class Map
      * @param string $route
      * @return void
      */
-    public function associate(string $name, string $route): void
+    public function associate(string $name, string $route)
     {
         if ($name != '') {
 

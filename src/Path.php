@@ -64,11 +64,11 @@ class Path
     {
         if (count($this->parts) > 0) {
 
-            [$part, $parts] = $this->split($this->parts);
+            list($part, $parts) = $this->split($this->parts);
 
             if (is_array($part)) {
 
-                [$parameter, $parameters] = $this->split($this->parameters);
+                list($parameter, $parameters) = $this->split($this->parameters);
 
                 if (preg_match('~^' . $part[1] . '$~', (string) $parameter) !== 0) {
 
