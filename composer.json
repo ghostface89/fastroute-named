@@ -1,5 +1,5 @@
 {
-    "name": "ellipse/fastroute-named",
+    "name": "ellipse/fastroute-named-7.0",
     "type": "library",
     "description": "FastRoute collector decorator implementing named routes",
     "keywords": [
@@ -7,7 +7,7 @@
         "FastRoute"
     ],
     "license": "MIT",
-    "homepage": "https://github.com/ellipsephp/fastroute-named",
+    "homepage": "https://github.com/ghostface89/fastroute-named-7.0",
     "support": {
         "issues": "https://github.com/ellipsephp/fastroute-named/issues",
         "source": "https://github.com/ellipsephp/fastroute-named"
